@@ -1,0 +1,49 @@
+// Import the necessary modules.
+const express = require('express');
+const morgan = require('morgan');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+// Create an Express app.
+const app = express();
+// Configure Morgan to log requests to the console.
+app.use(morgan('dev'));
+// Configure bodyParser to parse request bodies.
+app.use(bodyParser.json());
+// Connect to MongoDB.
+mongoose.connect('mongodb://localhost:27017/judge0');
+// Define the routes for the API.
+app.get('/api/code/compile', (req, res) => {
+  // Get the code from the request body.
+  const code = req.body.code;
+  // Compile the code.
+  const result = compileCode(code);
+  // Return the result to the client.
+  res.json(result);
+});
+// Define the error handler.
+app.use((err, req, res, next) => {
+  // Log the error to the console.
+  console.error(err);
+  // Return a 500 error to the client.
+  res.status(500).send('Internal server error');
+});
+// Define the authentication middleware.
+app.use((req, res, next) => {
+  // Get the JWT token from the request header.
+  const token = req.headers.authorization;
+  // Verify the JWT token.
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Set the user ID in the request context.
+    req.user = decoded.id;
+    // Continue with the next middleware.
+    next();
+  } catch (err) {
+    // Return a 401 unauthorized error.
+    res.status(401).send('Unauthorized');
+  }
+});
+// Start the server.
+app.listen(3000, () => {
+  console.log('
